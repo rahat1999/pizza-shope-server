@@ -4,7 +4,9 @@ const ObjectId = require('mongodb').ObjectId;
 const { MongoClient } = require('mongodb');
 require('dotenv').config()
 const app = express()
-const fileUpload = require('express-fileupload')
+const fileUpload = require('express-fileupload');
+const e = require('express');
+const req = require('express/lib/request');
 
 const port = process.env.PORT || 8000;
 
@@ -63,15 +65,16 @@ async function run() {
             res.send(result)
         })
 
-        // app.get('/allOrders', async (req, res) => {
-        //     const result = await ordersCollection.find({}).toArray()
-        //     res.send(result)
-        // })
 
         app.get('/userOrder', async (req, res) => {
             const email = req.query.email;
             const result = await ordersCollection.find({ email: email }).toArray()
             res.send(result)
+        })
+
+        app.get('/allOrders', async (req, res) => {
+            const result = await ordersCollection.find({}).toArray()
+            res.json(result)
         })
 
         /* ====== user review POST API ======== */
@@ -83,10 +86,23 @@ async function run() {
             const result = await coustomerReviewCollection.find({}).toArray()
             res.send(result)
         })
+        /* ========= Find Admin */
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            let isAdmin = false;
+            if (user?.role === 'admin') {
+                isAdmin = true;
+            }
+            res.json({ admin: isAdmin })
+        })
+
         /* ==User data Post api for save user email,name in db=== */
         app.post('/users', async (req, res) => {
             const result = await usersCollection.insertOne(req.body)
             res.send(result)
+            // console.log(result);
 
         })
         app.put('/users', async (req, res) => {
@@ -95,11 +111,12 @@ async function run() {
             const options = { upsert: true };
             const updateDoc = { $set: user };
             const result = await usersCollection.updateOne(filter, updateDoc, options)
+            // console.log(result);
             res.json(result);
         })
         app.put('/users/admin', async (req, res) => {
             const user = req.body;
-            console.log(user)
+            // console.log('put', user)
             const filter = { email: user.email };
             const updateDoc = { $set: { role: 'admin' } };
             const result = await usersCollection.updateOne(filter, updateDoc,)
