@@ -26,6 +26,7 @@ async function run() {
         const foodsCollection = database.collection("allFoods");
         const ordersCollection = database.collection("orders");
         const coustomerReviewCollection = database.collection("review");
+        const usersCollection = database.collection("users");
 
         /* post  food */
         app.post('/addProducts', async (req, res) => {
@@ -82,7 +83,28 @@ async function run() {
             const result = await coustomerReviewCollection.find({}).toArray()
             res.send(result)
         })
+        /* ==User data Post api for save user email,name in db=== */
+        app.post('/users', async (req, res) => {
+            const result = await usersCollection.insertOne(req.body)
+            res.send(result)
 
+        })
+        app.put('/users', async (req, res) => {
+            const user = req.body;
+            const filter = { email: user.email };
+            const options = { upsert: true };
+            const updateDoc = { $set: user };
+            const result = await usersCollection.updateOne(filter, updateDoc, options)
+            res.json(result);
+        })
+        app.put('/users/admin', async (req, res) => {
+            const user = req.body;
+            console.log(user)
+            const filter = { email: user.email };
+            const updateDoc = { $set: { role: 'admin' } };
+            const result = await usersCollection.updateOne(filter, updateDoc,)
+            res.json(result)
+        })
 
     } finally {
         //   await client.close();
