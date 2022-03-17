@@ -7,6 +7,7 @@ const app = express()
 const fileUpload = require('express-fileupload');
 const e = require('express');
 const req = require('express/lib/request');
+const stripe = require("stripe")(process.env.STRIPE_SECRET)
 
 const port = process.env.PORT || 8000;
 
@@ -77,6 +78,41 @@ async function run() {
             res.json(result)
         })
 
+        /* ======PAYMENT Gateway =======*/
+        app.put('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    payment: payment,
+                }
+            }
+            const result = await ordersCollection.updateOne(filter, updateDoc)
+            res.json(result);
+        })
+
+
+        app.get('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await ordersCollection.findOne(query);
+            res.json(result)
+        })
+        app.post("/create-payment-intent", async (req, res) => {
+            const paymentInfo = req.body;
+            const amount = paymentInfo.price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card'],
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+
         /* ====== user review POST API ======== */
         app.post('/coustomerReview', async (req, res) => {
             const result = await coustomerReviewCollection.insertOne(req.body);
@@ -122,6 +158,8 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updateDoc,)
             res.json(result)
         })
+
+
 
     } finally {
         //   await client.close();
